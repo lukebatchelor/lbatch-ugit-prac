@@ -1,6 +1,8 @@
 # pylint: disable=relative-beyond-top-level
 
 import argparse
+import sys
+
 from . import data
 
 def main():
@@ -15,9 +17,13 @@ def parse_args():
     init_parser = commands.add_parser('init')
     init_parser.set_defaults(func=init)
 
-    hash_object_parser = commands.add_parser('hash_object')
+    hash_object_parser = commands.add_parser('hash-object')
     hash_object_parser.set_defaults(func=hash_object)
     hash_object_parser.add_argument('file')
+
+    cat_file_parser = commands.add_parser('cat-file')
+    cat_file_parser.set_defaults(func=cat_file)
+    cat_file_parser.add_argument('object')
 
     return parser.parse_args()
 
@@ -29,3 +35,8 @@ def hash_object(args):
         file_data = f.read()
         oid = data.hash_object(file_data)
         print(oid)
+
+def cat_file(args):
+    sys.stdout.flush()
+    object = data.get_object(args.object)
+    sys.stdout.buffer.write(object)
