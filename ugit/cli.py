@@ -1,4 +1,5 @@
 import argparse
+from . import data
 
 def main():
     args = parse_args()
@@ -15,4 +16,4 @@ def parse_args():
     return parser.parse_args()
 
 def init():
-    print('Hello from init')
+    data.init()
