@@ -38,5 +38,5 @@ def hash_object(args):
 
 def cat_file(args):
     sys.stdout.flush()
-    object = data.get_object(args.object)
+    object = data.get_object(args.object, expected_type=None)
     sys.stdout.buffer.write(object)
