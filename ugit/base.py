@@ -43,7 +43,16 @@ def get_tree(oid, base_path=''):
             assert False, f'Unknown tree entry {type_} {oid}'
     return result
 
+def empty_current_directory():
+    for root, _, filenames in os.walk(''):
+        for filename in filenames:
+            path = os.path.relpath(f'{root}/{filename}')
+            if is_ignored(path) or os.path.isfile(path):
+                continue
+            os.remove(path)
+
 def read_tree(tree_oid):
+    empty_current_directory()
     tree = get_tree(tree_oid, base_path='./')
     for path, oid in tree.items():
         dir_name = os.path.dirname(path)
@@ -51,6 +60,13 @@ def read_tree(tree_oid):
         with open(path, 'wb') as f:
             f.write(data.get_object(oid))
 
+def commit(message):
+    tree = write_tree()
+    commit_str = f'tree {tree}\n'
+    commit_str += '\n'
+    commit_str += f'{message}\n'
+
+    return data.hash_object(commit_str.encode(), type_='commit')
 
 def is_ignored(path):
     return '.ugit' in path.split('/')
