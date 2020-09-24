@@ -8,6 +8,10 @@ from collections import namedtuple, deque
 
 from . import data
 
+def init():
+    data.init()
+    data.update_ref('HEAD', data.RefValue(symbolic=True, value='refs/heads/master'))
+
 def write_tree(directory='.'):
     entries = []
     with os.scandir(directory) as files:
@@ -102,6 +106,15 @@ def create_branch(branch_name, oid):
 
 def is_branch(branch_name):
     return data.get_ref(f'refs/heads/{branch_name}').value is not None
+
+def get_branch_name():
+    HEAD = data.get_ref('HEAD', deref=False)
+    if not HEAD.symbolic:
+        return None
+    HEAD = HEAD.value
+    assert HEAD.startswith('refs/heads/')
+    return os.path.relpath(HEAD, 'refs/heads/')
+
 
 Commit = namedtuple('Commit', ['tree', 'parent', 'message'])
 

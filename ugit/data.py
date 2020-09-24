@@ -44,7 +44,7 @@ def _get_ref_internal(ref_name, deref=True):
         if deref:
             return _get_ref_internal(value, deref=True)
 
-    return ref_name, RefValue(symbolic=False, value=value)
+    return ref_name, RefValue(symbolic=symbolic, value=value)
 
 def iter_refs(deref=True):
     refs = ['HEAD']
