@@ -109,10 +109,24 @@ def get_commit(oid):
     
     return Commit(tree = tree, parent = parent, message = message)
 
+def iter_commits_and_parents(oids):
+    oids = set(oids)
+    visted = set()
+
+    while oids:
+        oid = oids.pop()
+        if not oid or oid in visted:
+            continue
+        visted.add(oid)
+        yield oid
+
+        commit = get_commit(oid)
+        oids.add(commit.parent)
+
 def get_oid(name_or_oid):
     if name_or_oid == '@':
         name_or_oid = 'HEAD'
-        
+
     refs_to_try = [
         f'{name_or_oid}',
         f'refs/{name_or_oid}',
