@@ -98,6 +98,9 @@ def checkout(name):
     
     data.update_ref('HEAD', HEAD, deref=False)
 
+def reset(oid):
+    data.update_ref('HEAD', data.RefValue(symbolic=False, value=oid))
+
 def create_tag(tag_name, oid):
     data.update_ref(f'refs/tags/{tag_name}', data.RefValue(symbolic=False, value=oid))
 
