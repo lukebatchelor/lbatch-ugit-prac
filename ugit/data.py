@@ -46,7 +46,7 @@ def _get_ref_internal(ref_name, deref=True):
 
     return ref_name, RefValue(symbolic=symbolic, value=value)
 
-def iter_refs(deref=True):
+def iter_refs(prefix='', deref=True):
     refs = ['HEAD']
 
     for root, _, filenames in os.walk(f'{GIT_DIR}/refs'):
@@ -54,6 +54,8 @@ def iter_refs(deref=True):
         refs.extend(f'{root}/{name}' for name in filenames)
 
     for ref_name in refs:
+        if not ref_name.startswith(prefix):
+            continue
         yield ref_name, get_ref(ref_name, deref=deref)
 
 def hash_object(data, type_='blob'):
