@@ -4,7 +4,7 @@ import itertools
 import operator
 import string
 
-from collections import namedtuple
+from collections import namedtuple, deque
 
 from . import data
 
@@ -69,7 +69,7 @@ def commit(message):
     tree = write_tree()
     commit_str = f'tree {tree}\n'
 
-    HEAD = data.get_ref('HEAD')
+    HEAD = data.get_ref('HEAD').value
     if HEAD:
         commit_str += f'parent {HEAD}\n'
 
@@ -78,17 +78,30 @@ def commit(message):
 
     oid = data.hash_object(commit_str.encode(), type_='commit')
 
-    data.update_ref('HEAD', oid)
+    data.update_ref('HEAD', data.RefValue(symbolic=False, value=oid))
 
     return oid
 
-def checkout(oid):
+def checkout(name):
+    oid = get_oid(name)
     commit = get_commit(oid)
     read_tree(commit.tree)
-    data.update_ref('HEAD', oid)
+    
+    if is_branch(name):
+        HEAD = data.RefValue(symbolic=True, value=f'refs/heads/{name}')
+    else:
+        HEAD = data.RefValue(symbolic=False, value=oid)
+    
+    data.update_ref('HEAD', HEAD, deref=False)
 
 def create_tag(tag_name, oid):
-    data.update_ref(f'refs/tags/{tag_name}', oid)
+    data.update_ref(f'refs/tags/{tag_name}', data.RefValue(symbolic=False, value=oid))
+
+def create_branch(branch_name, oid):
+    data.update_ref(f'refs/heads/{branch_name}', data.RefValue(symbolic=False, value=oid))
+
+def is_branch(branch_name):
+    return data.get_ref(f'refs/heads/{branch_name}').value is not None
 
 Commit = namedtuple('Commit', ['tree', 'parent', 'message'])
 
@@ -110,19 +123,20 @@ def get_commit(oid):
     return Commit(tree = tree, parent = parent, message = message)
 
 def iter_commits_and_parents(oids):
-    oids = set(oids)
+    oids = deque(oids)
     visted = set()
 
     while oids:
-        oid = oids.pop()
+        oid = oids.popleft()
         if not oid or oid in visted:
             continue
         visted.add(oid)
         yield oid
 
         commit = get_commit(oid)
-        oids.add(commit.parent)
+        oids.appendleft(commit.parent)
 
+# given a name or oid, return the corresponding oid
 def get_oid(name_or_oid):
     if name_or_oid == '@':
         name_or_oid = 'HEAD'
@@ -134,8 +148,8 @@ def get_oid(name_or_oid):
         f'refs/heads/{name_or_oid}'
     ]
     for ref in refs_to_try:
-        if data.get_ref(ref):
-            return data.get_ref(ref)
+        if data.get_ref(ref).value:
+            return data.get_ref(ref).value
     # check name is a SHA1 hash
     is_hash = all(c in string.hexdigits for c in name_or_oid)
     if len(name_or_oid) and is_hash:
