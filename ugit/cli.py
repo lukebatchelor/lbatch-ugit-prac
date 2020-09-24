@@ -7,6 +7,7 @@ import subprocess
 
 from . import data
 from . import base
+from . import diff
 
 def main():
     args = parse_args()
@@ -70,6 +71,10 @@ def parse_args():
     reset_parser.set_defaults(func=reset)
     reset_parser.add_argument('commit', type=oid)
 
+    show_parser = commands.add_parser('show')
+    show_parser.set_defaults(func=show)
+    show_parser.add_argument('oid', default='@', type=oid, nargs='?')
+
     return parser.parse_args()
 
 def init(args):
@@ -96,6 +101,12 @@ def commit(args):
     commit_oid = base.commit(args.message)
     print(commit_oid)
 
+def _print_commit(oid, commit, refs=None):
+    refs_str = f' ({", ".join(refs)})' if refs else ''
+    print(f'commit {oid}{refs_str}\n')
+    print(textwrap.indent(commit.message, '    '))
+    print('')
+
 def log(args):
     refs = {}
 
@@ -104,11 +115,19 @@ def log(args):
 
     for oid in base.iter_commits_and_parents({ args.oid }):
         commit = base.get_commit(oid)
+        _print_commit(oid, commit, refs.get(oid))
 
-        refs_str = f' ({", ".join(refs[oid])})' if oid in refs else ''
-        print(f'commit {oid}{refs_str}\n')
-        print(textwrap.indent(commit.message, '    '))
-        print('')
+def show(args):
+    if not args.oid:
+        return
+    commit = base.get_commit(args.oid)
+    parent_tree = None
+    if commit.parent:
+        parent_tree = base.get_commit(commit.parent).tree
+    _print_commit(args.oid, commit)
+    result = diff.diff_trees(base.get_tree(parent_tree), base.get_tree(commit.tree))
+    sys.stdout.flush()
+    sys.stdout.buffer.write(result)
 
 
 def checkout(args):
